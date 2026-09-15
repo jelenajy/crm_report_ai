@@ -5,7 +5,7 @@
 | 项目 | 内容 |
 |---|---|
 | 产品名称 | C Hive Lens｜指标顾问 |
-| 文档版本 | V1.3 |
+| 文档版本 | V1.5 |
 | 文档日期 | 2026-09-15 |
 | 目标载体 | Power BI 客质月报 |
 | 原型名称 | 客质月报交互设计v2 |
@@ -56,7 +56,7 @@
 
 ### 4.2 典型场景
 
-用户正在查看“客质-月报”，点击右下角“指标顾问”打开助手。系统根据绑定的知识库配置自动显示报表名称，用户在助手内主动选择 Brand、Period 和 Report Month 后提问。AI 使用“报表身份 + 用户选择的问答范围”检索知识，解释公式、订单规则和适用范围，并展示知识来源与更新时间。助手内的问答范围不会改变 Power BI 报表数据。
+用户点击右下角“指标顾问”打开助手，在“当前报表上下文”中选择正在咨询的报表。系统根据报表名称路由至对应知识包，并动态生成该报表的快捷问题。Customer Type 已接入客质知识包，可返回完整模拟口径；Product、Member Tier、Binding 和 NPS 在正式知识包接入前仅演示路由、推荐问题和有效问题反馈，不编造业务结论。
 
 ## 5. 产品原则
 
@@ -110,28 +110,47 @@
 - 用户身份、角色和权限声明。
 - 当前时间、语言和知识库版本。
 
-Brand、Period 和 Report Month 由用户在助手内主动选择，不从 Power BI 前端筛选器自动读取。系统应区分“问答知识范围”和“报表数据筛选”：助手选择仅用于知识检索，不改变报表，不得被描述为当前 Power BI 筛选状态。
+报表名称由用户在助手内主动选择，不从 Power BI 前端筛选器自动推断。系统应区分“知识路由上下文”和“报表数据筛选”：助手选择仅用于选择知识包与快捷问题，不改变报表数据。
 
-### FR-02A 助手内问答范围选择
+### FR-02A 助手内报表选择
 
-- 助手的“当前报表上下文”默认显示报表名称“客质-月报”。
-- 用户可选择 Brand、Period 和 Report Month，首期不提供 Customer Type 与 Counter 上下文筛选。
-- 选择发生变化后，助手显示非阻塞提示“问答范围已更新”。
-- 已生成的历史回答保留其生成时问答范围，不随新选择回写；后续问题使用最新范围。
+- 助手的“当前报表上下文”仅提供一个报表选择框，默认选择 `Customer Type`。
+- 可选报表为 `Customer Type`、`Product`、`Member Tier`、`Binding` 和 `NPS`。
+- 删除 Brand、Period 和 Report Month 助手内筛选器。
+- 报表选择发生变化后，助手显示非阻塞提示“已切换至 {reportName}，问答知识范围及推荐问题已更新”。
+- 已生成的历史回答保留其生成时所选报表，不随新选择回写；后续问题使用新报表上下文。
 - 每条回答应保存 `contextSnapshot`，用于审计和问题复现。
-- 助手必须显示说明：“以下选择仅用于限定 AI 问答知识范围，不会改变报表数据。”
+- 报表选择只控制知识路由和快捷问题，不改变 Power BI 报表数据。
+- “当前报表上下文”卡片默认展开，标题右侧提供“收起/展开”按钮。
+- 收起后仅保留一行摘要：“当前报表：{reportName}”；摘要随选择实时更新。
+- 折叠状态在当前页面会话中保持，发送问题后不得自动展开。
+- 折叠与展开使用不超过 250ms 的平滑动画；收起后释放的高度自动分配给聊天消息区。
+- 折叠按钮必须支持键盘操作，并通过 `aria-expanded` 和 `aria-controls` 暴露状态。
 
 ### FR-02B Power BI 页面筛选器边界
 
 - 报表画布原有 Brand、Period、Report Month、Customer Type 和 Counter 筛选器保留并由 Power BI 自身管理。
 - 首期助手不监听、不读取、不推断这些筛选器的值，也不与助手内选项双向同步。
 - 产品文案不得暗示助手已经获得 Power BI 当前筛选状态。
-- 若未来 Power BI Embedded 或受支持接口能稳定提供筛选事件，可作为增强能力启用自动同步；启用前必须提供明显的同步状态、失败降级和用户手动修正能力。
+- 助手内报表选择器不代表 Power BI 页面当前筛选状态。
+- 若未来 Power BI Embedded 或受支持接口能稳定提供报表身份与筛选事件，可作为增强能力启用自动识别；启用前必须提供明显的同步状态、失败降级和用户手动修正能力。
+
+### FR-02C 报表路由与动态快捷问题
+
+- 报表选择值必须映射到稳定 `report_id`、知识包、知识状态、负责人和快捷问题配置。
+- 切换报表后，知识状态和“猜你想问”列表必须同步更新，不保留上一报表的快捷问题。
+- `Customer Type` 使用当前客质知识包，并展示购买频次、大单、新客、LFL 和时间周期等问题。
+- `Product` 展示产品新客、产品复购、TOP N 和明星产品问题。
+- `Member Tier` 展示会员等级定义、等级变更和等级与产品问题。
+- `Binding` 展示绑定定义、绑定状态和渠道规则问题。
+- `NPS` 展示 NPS 定义、计算方法和样本范围问题。
+- 未接入正式知识包的报表不得生成确定性业务口径；有效问题自动提交至该报表配置的负责人。
 
 ### FR-03 快捷问题
 
-- 全局入口默认问题：指标口径、数据更新、异常处理、负责人。
-- 当前知识包默认问题：购买频次、大单、新客、LFL、退款规则和时间周期。
+- 欢迎语固定为：“请基于该报表进行相关的逻辑问询，若您的有效问题知识库未收录，我将自动反馈给报表负责人。”
+- 快捷问题区域必须显示标题“猜你想问”。
+- 快捷问题随所选报表动态更新，具体配置遵循 FR-02C。
 - 点击快捷问题后直接发送，并显示加载状态。
 
 ### FR-04 自由问答
@@ -194,7 +213,7 @@ Brand、Period 和 Report Month 由用户在助手内主动选择，不从 Power
 后台记录至少包含：
 
 - `ticket_id`、问题原文、标准化问题、创建时间、用户标识。
-- 提问时的报表、知识包以及 Brand、Period、Report Month 问答范围快照。
+- 提问时的报表 ID、报表名称、知识包、知识状态和负责团队快照。
 - 相关性判断结果、检索关键词、最高匹配分数和候选知识 ID。
 - 模型版本、提示模板版本、知识索引版本。
 - 负责团队、指定负责人、优先级、处理状态和处理时限。
@@ -278,7 +297,7 @@ Brand、Period 和 Report Month 由用户在助手内主动选择，不从 Power
 
 1. **报表知识包**：保存仅适用于某张报表或报表族的指标定义、例外、页面映射和负责人。
 2. **公共知识层**：保存经审核、可跨报表复用的时间周期、订单有效性、会员身份和通用维度定义。
-3. **中央知识路由器**：根据用户权限、`report_id`、知识包、用户选择的 Brand/Period/Report Month 和问题语义选择检索范围。
+3. **中央知识路由器**：根据用户权限、用户选择的 `report_id`、知识包状态和问题语义选择检索范围。
 4. **相关报表目录**：记录相邻主题及目标报表，用于识别“知识存在但不属于当前报表”的问题并提供导航。
 
 ### 8.7 报表知识包配置规范
@@ -287,22 +306,26 @@ Brand、Period 和 Report Month 由用户在助手内主动选择，不从 Power
 
 ```json
 {
-  "reportId": "crm-customer-monthly",
-  "reportName": "客质-月报",
-  "reportFamily": "CRM Monthly & Weekly",
-  "knowledgePackageName": "monthly_weekly_customers_and_product_and_sales_bigtable-code解析",
-  "displayReportName": "客质-月报",
-  "topics": ["customer", "new", "existing", "winback", "lfl"],
-  "knowledgePackages": ["kb-crm-customer-core"],
-  "sharedPackages": ["kb-time-period", "kb-valid-order", "kb-member-identity"],
-  "allowedMetricIds": ["customers", "orders", "purchase_frequency", "single_qty_rate", "avg_age"],
-  "relatedReports": ["crm-product-monthly", "crm-product-topn", "crm-sales-competitor"],
-  "ownerTeam": "CRM 数据产品组",
-  "permissionTags": ["crm-report-user"]
+  "reports": {
+    "customer_type": {
+      "displayReportName": "Customer Type",
+      "knowledgePackageId": "kb-crm-customer-core",
+      "knowledgeStatus": "ready",
+      "ownerTeam": "CRM 数据产品组",
+      "quickQuestionSet": "customer_type_v1"
+    },
+    "product": {
+      "displayReportName": "Product",
+      "knowledgePackageId": null,
+      "knowledgeStatus": "pending",
+      "ownerTeam": "CRM 产品报表组",
+      "quickQuestionSet": "product_v1"
+    }
+  }
 }
 ```
 
-配置使用稳定技术 ID 关联 Power BI，不依赖页面展示名称。知识文件路径由知识服务管理，前端不得接收本地文件路径。
+完整配置按相同结构注册 Member Tier、Binding 和 NPS。配置使用稳定技术 ID 关联知识包，不依赖页面展示名称。知识文件路径由知识服务管理，前端不得接收本地文件路径。
 
 ### 8.8 知识检索顺序与冲突优先级
 
@@ -348,7 +371,7 @@ Brand、Period 和 Report Month 由用户在助手内主动选择，不从 Power
 ### 9.3 逻辑链路
 
 1. 用户点击右下角“指标顾问”打开助手。
-2. 前端从知识包配置取得报表身份，并读取用户在助手内选择的 Brand、Period 和 Report Month。
+2. 前端读取用户选择的报表，并从路由配置取得知识包、知识状态、负责团队和快捷问题。
 3. 前端将问题与结构化上下文发送至企业 AI 网关。
 4. 网关执行身份验证、权限校验、敏感信息处理和限流。
 5. 检索服务基于报表 ID、知识包、用户问答范围、有效期和权限过滤知识。
@@ -368,14 +391,11 @@ Brand、Period 和 Report Month 由用户在助手内主动选择，不从 Power
   "reportContext": {
     "workspaceId": "workspace-id",
     "reportId": "report-id",
-    "reportName": "客质-月报",
-    "knowledgePackageId": "kb-crm-customer-monthly",
-    "queryScope": {
-      "brand": "Lancome",
-      "period": "MTD",
-      "reportMonth": "2025-09",
-      "source": "user_selected_in_assistant"
-    }
+    "reportId": "customer_type",
+    "reportName": "Customer Type",
+    "knowledgePackageId": "kb-crm-customer-core",
+    "knowledgeStatus": "ready",
+    "source": "user_selected_in_assistant"
   }
 }
 ```
@@ -386,7 +406,7 @@ Brand、Period 和 Report Month 由用户在助手内主动选择，不从 Power
 {
   "answer": "……",
   "confidence": "high",
-  "scopeNote": "适用于客质-月报；问答范围：Lancome / MTD / 2025-09",
+  "scopeNote": "适用于 Customer Type 报表",
   "citations": [
     {
       "knowledgeId": "crm-repurchase-001",
@@ -464,8 +484,11 @@ HTML 原型为高保真前端演示，不连接真实 Power BI、知识库或大
 - 引用依据展开、推荐追问、满意度反馈和异常演示。
 - 响应式布局和基础键盘可用性。
 - 报表画布五个筛选器作为视觉展示，不与 AI 自动同步。
-- 助手内提供 Brand、Period 和 Report Month 三个独立问答范围选择器。
-- 报表名称默认显示“客质-月报”，由知识包配置自动映射。
+- 助手内提供 Customer Type、Product、Member Tier、Binding、NPS 报表选择器。
+- 报表名称默认显示“Customer Type”，并由报表路由配置匹配知识包、知识状态、负责人和快捷问题。
+- 当前报表上下文支持一键收起；收起后显示紧凑范围摘要并扩大聊天区域。
+- 快捷问题区域显示“猜你想问”，并随报表选择动态更新。
+- 使用指定的新欢迎语说明提问范围和知识缺失反馈机制。
 - 与报表相关但无答案的问题自动生成模拟问题编号和后台提交状态。
 - 与报表无关的问题相关性提示和报表内问题引导。
 - 基于 2026-09-08 客质知识包的购买频次、大单、时间周期、新客和 LFL 等模拟回答。
@@ -497,16 +520,19 @@ HTML 原型为高保真前端演示，不连接真实 Power BI、知识库或大
 1. HTML 单文件可直接在现代浏览器打开，无需安装依赖。
 2. 视觉结构与参考客质月报一致，且不直接复制品牌受限资产作为实现依赖。
 3. 仅右下角“指标顾问”入口可打开右侧助手，KPI 区域无额外 AI 图标。
-4. 助手默认显示“客质-月报”，并提供 Brand、Period、Report Month 三个问答范围选择器。
+4. 助手默认显示“Customer Type”，并提供五个报表名称选项。
 5. 至少三个快捷问题和自由输入可触发不同模拟回答。
 6. 可展开知识来源，显示版本、更新时间和负责人。
 7. 可演示无答案/低置信度提示、反馈、清空和关闭。
-8. 修改助手内任一范围选择器后，问答范围实时更新并出现提示；修改报表画布筛选器不会影响助手。
+8. 切换报表后，知识状态、负责人和“猜你想问”实时更新；修改报表画布筛选器不会影响助手。
 9. 与报表相关但无答案的问题生成唯一模拟编号，且显示负责团队和处理状态。
 10. 与报表无关的问题不生成编号，并展示相关性引导和推荐问题。
 11. 购买频次、大单、时间周期等问题可返回与当前知识包一致的业务答案。
 12. 其他已接入报表的问题显示目标报表卡片，不创建知识缺失工单。
 13. 页面与回答中不出现 SQL 文件名、底层表名、代码行号或代码片段。
+14. 上下文卡片可一键收起和重新展开；收起后显示“当前报表：{reportName}”、聊天区域扩大，发送消息不会改变折叠状态。
+15. 欢迎语与确认文案一致，快捷问题区域显示“猜你想问”。
+16. Product、Member Tier、Binding、NPS 在知识包未接入时不生成确定性答案，并将有效问题提交至对应负责人。
 
 ### 15.2 生产版本验收
 
@@ -549,4 +575,4 @@ HTML 原型为高保真前端演示，不连接真实 Power BI、知识库或大
 
 ## 18. 设计结论
 
-首版体验采用“右下角 C Hive Lens 指标顾问 + 右侧抽屉”，不在 KPI 区域增加入口。助手根据知识包配置显示报表名称“客质-月报”，由用户在助手内主动选择 Brand、Period 和 Report Month 作为知识检索范围；报表画布筛选器与助手首期不自动同步。HTML 原型重点验证业务问答、手动范围选择、引用溯源、相关性分流与未回答问题闭环。生产实现优先评估 Power BI 自定义视觉对象；若未来具备可靠筛选事件接口，再评估自动同步。
+首版体验采用“右下角 C Hive Lens 指标顾问 + 右侧抽屉”，不在 KPI 区域增加入口。助手在“当前报表上下文”中提供 Customer Type、Product、Member Tier、Binding、NPS 报表选择；报表选择驱动知识包、知识状态、快捷问题和负责团队。Customer Type 提供真实知识模拟回答，其余报表在知识包接入前仅演示路由和有效问题反馈。上下文卡片支持折叠。报表画布筛选器与助手首期不自动同步。
