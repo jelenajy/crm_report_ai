@@ -78,7 +78,7 @@
 <div class="overlay" id="overlay"></div>
 <aside class="drawer" id="assistantDrawer" role="dialog" aria-modal="true" aria-label="C Hive Lens 指标顾问" aria-hidden="true">
   <header class="drawer-header"><div class="ai-orb">✦</div><div><div class="drawer-title">C Hive Lens<small>指标顾问</small></div><div class="drawer-status">● 已连接 CRM 指标知识库</div></div><div class="header-actions"><button class="icon-btn" id="clearBtn" aria-label="清空对话">↻</button><button class="icon-btn" id="closeBtn" aria-label="关闭助手">×</button></div></header>
-  <div class="knowledge-pill"><span id="knowledgeLabel">◈ Customer Type 知识包</span><strong id="knowledgeStatus">已加载</strong></div>
+  <div class="knowledge-pill"><span id="knowledgeLabel">◈ Customer Type知识包</span><strong id="knowledgeStatus">已加载</strong></div>
   <section class="context-card" id="contextCard"><div class="context-top">▣ 当前报表上下文 <button id="contextToggle" aria-expanded="true" aria-controls="contextBody">收起⌃</button></div><div class="context-summary" id="contextSummary">当前报表：Customer Type</div><div class="context-body" id="contextBody"><label class="report-select-label">当前报表<select id="reportSelector"><option value="customer_type">Customer Type</option><option value="product">Product</option><option value="member_tier">Member Tier</option><option value="binding">Binding</option><option value="nps">NPS</option></select></label><p class="scope-help">报表选择将匹配对应知识库及推荐问题，不会改变报表数据。</p></div></section>
   <div class="context-change" id="contextChange" role="status">筛选条件已更新，后续回答将使用最新上下文。</div>
   <main class="messages" id="chatMessages" aria-live="polite"><div class="welcome"><h3>你好，我是 C Hive Lens 指标顾问</h3><p>请基于该报表进行相关的逻辑问询，若您的有效问题知识库未收录，我将自动反馈给报表负责人。</p><div class="quick-heading">猜你想问</div><div class="quick-list" id="quickQuestions"></div></div></main>
@@ -88,7 +88,7 @@
 
 <script>
   const reportConfigs={
-    customer_type:{name:'Customer Type',knowledgePackageName:'客质月报知识包',status:'ready',owner:'CRM 数据产品组',questions:['购买频次是如何计算的？','客质月报包含大单业绩吗？','新客是如何定义的？','LFL 是如何计算的？','MTD、YTD 和 R12 分别是什么？']},
+    customer_type:{name:'Customer Type',knowledgePackageName:'Customer Type知识包',status:'ready',owner:'CRM 数据产品组',questions:['购买频次是如何计算的？','客质月报包含大单业绩吗？','新客是如何定义的？','LFL 是如何计算的？','MTD、YTD 和 R12 分别是什么？']},
     product:{name:'Product',knowledgePackageName:'Product 知识包',status:'pending',owner:'CRM 产品报表组',questions:['产品新客是如何定义的？','产品复购如何计算？','产品 TOP N 如何排名？','明星产品的范围是什么？']},
     member_tier:{name:'Member Tier',knowledgePackageName:'Member Tier 知识包',status:'pending',owner:'CRM 会员运营组',questions:['会员等级如何定义？','会员等级何时更新？','等级与产品如何关联？']},
     binding:{name:'Binding',knowledgePackageName:'Binding 知识包',status:'pending',owner:'CRM 数据产品组',questions:['绑定指标如何定义？','绑定状态有哪些？','不同渠道的绑定规则是什么？']},
