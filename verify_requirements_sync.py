@@ -6,7 +6,8 @@ html = (root / "客质月报交互设计v2.html").read_text(encoding="utf-8")
 doc = (root / "客质月报AI知识问答需求文档.md").read_text(encoding="utf-8")
 
 required_doc = [
-    "文档版本 | V2.0",
+    "文档版本 | V2.1",
+    "C Hive Sage｜指标顾问",
     "当前实现基线",
     "单一入口",
     "当前报表",
@@ -34,6 +35,7 @@ required_doc = [
 ]
 
 forbidden_doc = [
+    "C Hive Lens",
     "全局悬浮入口 + 指标级快捷入口",
     "AI 指标助手",
     "产品名称、知识状态、最小化、清空和关闭",
